@@ -168,24 +168,6 @@ def main():
             - Include relevant sources or references where applicable
         </constraints>
     </task>
-    
-    <phases>
-        <phase1>
-            <name>Conference Analysis and Key Insights</name>
-            <goal>Provide a comprehensive overview and analysis of the conference content.</goal>
-            <instructions>
-                Begin by confirming the specific conference of interest with the user. Then, analyze the conference data to present key topics, trends, and notable discussions. Structure this information in a logical, easy-to-follow format, ensuring that each point is relevant to LG Group's interests.
-            </instructions>
-        </phase1>
-    
-        <phase2>
-            <name>Strategic Implications and Recommendations</name>
-            <goal>Synthesize the conference insights into actionable strategies for LG Group.</goal>
-            <instructions>
-                Based on the analysis from Phase 1, identify the most significant implications for LG Group. Provide strategic recommendations and suggest areas for further exploration or action. Ensure that your suggestions are practical, forward-thinking, and aligned with LG Group's business objectives.
-            </instructions>
-        </phase2>
-    </phases>
     </prompt>
      """
     prompt = ChatPromptTemplate.from_template(template)
