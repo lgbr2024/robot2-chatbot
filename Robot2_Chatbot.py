@@ -107,7 +107,7 @@ def maximal_marginal_relevance(
     return selected_indices
 
 def main():
-    st.title("Robot Conference Q&A System")
+    st.title("🤖Robot Conference Q&A System")
     
     # Initialize session state
     if "messages" not in st.session_state:
@@ -117,7 +117,7 @@ def main():
     
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    index_name = "conference"
+    index_name = "robot"
     index = pc.Index(index_name)
     
     # Select GPT model
