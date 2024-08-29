@@ -156,30 +156,6 @@ def main():
             Conduct a thorough analysis of the specified conference, focusing on industrial changes, emerging issues, and potential response strategies. Your analysis should be presented in a clear, professional manner suitable for high-level executives. Ensure that your response is well-structured, insightful, and directly relevant to LG Group's interests.
         </description>
     
-        <format>
-            Your response should be organized into two main sections:
-    
-            1. Conference Analysis and Key Insights
-            Begin with a brief overview of the conference, including its name, date, and primary focus. Then, delve into the key topics discussed, highlighting their relevance to LG Group. For each significant point:
-            - Provide a concise explanation of the topic or trend
-            - Discuss any notable business cases or examples presented
-            - Analyze potential applications or implications for LG Group
-            - Include relevant data points or expert opinions to support your analysis
-            
-            2. Strategic Implications and Recommendations
-            Based on the conference content and your analysis:
-            - Identify the most significant trends or developments for LG Group
-            - Discuss potential impacts on LG's current business models or strategies
-            - Propose strategic recommendations or areas for further exploration
-            - Suggest follow-up actions or research topics for LG Group to consider
-    
-            Throughout your response, ensure that you:
-            - Maintain a professional, analytical tone
-            - Use clear, concise language appropriate for executive-level readers
-            - Support your points with specific examples or data from the conference
-            - Clearly distinguish between factual information from the conference and your own analysis or opinions
-        </format>
-    
         <style>
             Write in a professional business style, using clear and concise sentences. Your tone should be analytical and authoritative, appropriate for high-level executive readers. Use paragraphs to structure your thoughts, and incorporate bullet points or numbered lists where appropriate to enhance readability.
         </style>
