@@ -109,9 +109,11 @@ def maximal_marginal_relevance(
 def main():
     st.title("Robot Conference Q&A System")
     
-    # Initialize session state for chat history
+    # Initialize session state for chat history and mode
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "mode" not in st.session_state:
+        st.session_state.mode = None
     
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
@@ -138,8 +140,8 @@ def main():
         search_kwargs={"k": 10, "fetch_k": 20, "lambda_mult": 0.7}
     )
     
-    # Set up prompt template and chain
-    template = """
+    # Set up prompt template for report mode
+    report_template = """
     <prompt>
     Question: {question} 
     Context: {context} 
@@ -191,7 +193,15 @@ def main():
     </task>
     </prompt>
     """
-    prompt = ChatPromptTemplate.from_template(template)
+    report_prompt = ChatPromptTemplate.from_template(report_template)
+
+    # Set up prompt template for chatbot mode
+    chatbot_template = """
+    Question: {question}
+    Context: {context}
+    Answer the question based on the given context. If the answer is not in the context, say you don't know.
+    """
+    chatbot_prompt = ChatPromptTemplate.from_template(chatbot_template)
 
     def format_docs(docs: List[Document]) -> str:
         formatted = []
@@ -201,13 +211,30 @@ def main():
         return "\n\n" + "\n\n".join(formatted)
 
     format = itemgetter("docs") | RunnableLambda(format_docs)
-    answer = prompt | llm | StrOutputParser()
-    chain = (
-        RunnableParallel(question=RunnablePassthrough(), docs=retriever)
-        .assign(context=format)
-        .assign(answer=answer)
-        .pick(["answer", "docs"])
-    )
+
+    def get_chain(prompt):
+        answer = prompt | llm | StrOutputParser()
+        return (
+            RunnableParallel(question=RunnablePassthrough(), docs=retriever)
+            .assign(context=format)
+            .assign(answer=answer)
+            .pick(["answer", "docs"])
+        )
+
+    report_chain = get_chain(report_prompt)
+    chatbot_chain = get_chain(chatbot_prompt)
+
+    # Mode selection
+    if st.session_state.mode is None:
+        st.session_state.mode = st.radio("Select mode:", ("Report Mode", "Chatbot Mode"))
+
+    # Reset function
+    def reset_conversation():
+        st.session_state.messages = []
+        st.session_state.mode = None
+
+    # Check for reset keywords
+    reset_keywords = ["처음으로", "초기화", "다시", "안녕"]
 
     # Display chat history
     for message in st.session_state.messages:
@@ -216,53 +243,64 @@ def main():
     
     # User input
     if question := st.chat_input("Please ask a question about the conference:"):
-        st.session_state.messages.append({"role": "user", "content": question})
-        with st.chat_message("user"):
-            st.markdown(question)
-        
-        with st.chat_message("assistant"):
-            # Create placeholders for status updates
-            status_placeholder = st.empty()
-            progress_bar = st.progress(0)
+        # Check for reset keywords
+        if any(keyword in question for keyword in reset_keywords):
+            reset_conversation()
+            st.experimental_rerun()
+        else:
+            st.session_state.messages.append({"role": "user", "content": question})
+            with st.chat_message("user"):
+                st.markdown(question)
             
-            try:
-                # Step 1: Query Processing
-                status_placeholder.text("Processing query...")
-                progress_bar.progress(25)
-                time.sleep(1)  # Simulate processing time
+            with st.chat_message("assistant"):
+                # Create placeholders for status updates
+                status_placeholder = st.empty()
+                progress_bar = st.progress(0)
                 
-                # Step 2: Searching Database
-                status_placeholder.text("Searching database...")
-                progress_bar.progress(50)
-                response = chain.invoke(question)
-                time.sleep(1)  # Simulate search time
+                try:
+                    # Step 1: Query Processing
+                    status_placeholder.text("Processing query...")
+                    progress_bar.progress(25)
+                    time.sleep(1)  # Simulate processing time
+                    
+                    # Step 2: Searching Database
+                    status_placeholder.text("Searching database...")
+                    progress_bar.progress(50)
+                    chain = report_chain if st.session_state.mode == "Report Mode" else chatbot_chain
+                    response = chain.invoke(question)
+                    time.sleep(1)  # Simulate search time
+                    
+                    # Step 3: Generating Answer
+                    status_placeholder.text("Generating answer...")
+                    progress_bar.progress(75)
+                    answer = response['answer']
+                    time.sleep(1)  # Simulate generation time
+                    
+                    # Step 4: Finalizing Response
+                    status_placeholder.text("Finalizing response...")
+                    progress_bar.progress(100)
+                    time.sleep(0.5)  # Short pause to show completion
+                    
+                finally:
+                    # Clear status displays
+                    status_placeholder.empty()
+                    progress_bar.empty()
                 
-                # Step 3: Generating Answer
-                status_placeholder.text("Generating answer...")
-                progress_bar.progress(75)
-                answer = response['answer']
-                time.sleep(1)  # Simulate generation time
+                # Display the answer
+                st.markdown(answer)
                 
-                # Step 4: Finalizing Response
-                status_placeholder.text("Finalizing response...")
-                progress_bar.progress(100)
-                time.sleep(0.5)  # Short pause to show completion
+                # Display sources
+                with st.expander("Sources"):
+                    for doc in response['docs']:
+                        st.write(f"- {doc.metadata['source']}")
                 
-            finally:
-                # Clear status displays
-                status_placeholder.empty()
-                progress_bar.empty()
-            
-            # Display the answer
-            st.markdown(answer)
-            
-            # Display sources
-            with st.expander("Sources"):
-                for doc in response['docs']:
-                    st.write(f"- {doc.metadata['source']}")
-            
-            # Add assistant's response to chat history
-            st.session_state.messages.append({"role": "assistant", "content": answer})
+                # Add assistant's response to chat history
+                st.session_state.messages.append({"role": "assistant", "content": answer})
+
+    # Add a button to reset the conversation
+    if st.button("Reset Conversation"):
+        reset_conversation()
+        st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
