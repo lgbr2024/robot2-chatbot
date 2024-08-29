@@ -199,7 +199,15 @@ def main():
     chatbot_template = """
     Question: {question}
     Context: {context}
-    Answer the question based on the given context. Provide a concise response in 2-3 sentences. If the answer is not in the context, say you don't know. Use a conversational tone and answer in Korean.
+    Answer the question based on the given context in 4,000 words. 
+            - Analyze the key content discussed at the conference and reference.
+            - For each key session or topic:
+                  - Gather the details as thoroughly as possible, then categorize them according to the following format: 
+                  - Topic : 
+                    - Fact : {{1. Provide a detailed description of approximately 5 sentences. 2. Include specific examples, data points, or case studies mentioned in the session. }}
+                    - Your opinion : {{Provide a detailed description of approximately 3 sentences.}}
+                    - Source : {{Show 2~3 data sources for each key topic}}
+    If the answer is not in the context, say you don't know. Use a conversational tone and answer in Korean.
     """
     chatbot_prompt = ChatPromptTemplate.from_template(chatbot_template)
 
