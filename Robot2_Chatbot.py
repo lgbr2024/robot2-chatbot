@@ -112,6 +112,8 @@ def main():
     # Initialize session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    
+    # Ensure current_phase is always initialized
     if "current_phase" not in st.session_state:
         st.session_state.current_phase = "PHASE 1"
     
@@ -222,7 +224,11 @@ def main():
     format = itemgetter("docs") | RunnableLambda(format_docs)
     answer = prompt | llm | StrOutputParser()
     chain = (
-        RunnableParallel(question=RunnablePassthrough(), docs=retriever, current_phase=lambda _: st.session_state.current_phase)
+        RunnableParallel(
+            question=RunnablePassthrough(),
+            docs=retriever,
+            current_phase=lambda x: st.session_state.get("current_phase", "PHASE 1")
+        )
         .assign(context=format)
         .assign(answer=answer)
         .pick(["answer"])
