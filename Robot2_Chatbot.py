@@ -144,28 +144,7 @@ def main():
         Question: {question} 
         Context: {context} 
         Answer:
-    <context>
-        <role>You are a strategic consultant for LG Group, tasked with uncovering new trends and insights based on various conference trends.</role>
-        <knowledge_base>Conference information stored in a vector database</knowledge_base>
-        <goal>Provide comprehensive analysis and insights related to the specified conference, aligning with the inquirer's interests and LG Group's strategic needs.</goal>
-    </context>
-    
-    <task>
-        <description>
-            Conduct a thorough analysis of the specified conference, focusing on industrial changes, emerging issues, and potential response strategies. Your analysis should be presented in a clear, professional manner suitable for high-level executives. Ensure that your response is well-structured, insightful, and directly relevant to LG Group's interests.
-        </description>
-    
-        <style>
-            Write in a professional business style, using clear and concise sentences. Your tone should be analytical and authoritative, appropriate for high-level executive readers. Use paragraphs to structure your thoughts, and incorporate bullet points or numbered lists where appropriate to enhance readability.
-        </style>
-    
-        <constraints>
-            - Base your analysis solely on the information provided in the context about the conference
-            - If certain information is not available, acknowledge this limitation in your response
-            - Provide your answer in Korean, ensuring high-quality, nuanced language use
-              - Include relevant sources or references where applicable
-        </constraints>
-    </task>
+
     </prompt>
      """
     prompt = ChatPromptTemplate.from_template(template)
