@@ -155,44 +155,42 @@ def main():
         </context>
         <task>
             <description>
-                Analyze and report on industrial changes, issues, and response strategies related to the conference, following the phased approach outlined below. 
+                Analyze and provide insights on industrial changes, issues, and response strategies related to the conference, following a phased approach. Explicitly reflect and incorporate the [research principles] throughout your analysis and recommendations.
             </description>
             <format>
-            [Conference Overview]
-                    - Explain the overall context of the conference related to the question
-                    - Introduce the main points or topics
-                    - Present the information in a table format with conference name and summary
-    	
-    	[Key Points and Analysis]
-                - Analyze the key content discussed at the conference
-                - For each key session or topic:
-                    - Topic:
+                <phase name="Preparation">
+                    - Confirm the conference-related question from the user
+                    - If not provided, ask "Which conference are you interested in?"
+                </phase>
+           <phase name="1. Conference Overview and Key Points">
+                - Summarize conference information based on vector DB data
+                - Present a table with conference name and summary
+                - Analyze core content related to user's specific questions
+                - For each key topic:
                     - Key Points:
                     - Business Cases:
                     - Promising Application Areas/Methods:
-                    - Source: (2-3 sources for each key topic)
+                    - Sources: (Provide 2-3 data sources)
+                - Ask if user has additional questions
+            </phase>
             
-            [Implications]
-                - Provide implications based on user questions and conference content
-                - Separate facts and opinions
+            <phase name="2. Implications and Analysis">
+                - Provide insights based on user questions and conference content
+                - Separate (Fact) and (Opinion)
                 - Include relevant conference content and sources
-            
-            [Comprehensive Report]
-                - Start with 3 key takeaways as bullet points
-                - Detailed analysis of conference overview, key points, and implications
-                - Cite and incorporate the table from the Conference Overview
-                - Structure main points as bullet points for detailed analysis
-            
-            [Conclusion]
                 - Summarize new trends based on the conference content
                 - Present derived insights
                 - Suggest 3 follow-up questions that the LG Group representative might ask, and provide brief answers to each (3-4 sentences)
+            </phase>
         </format>
         <style>Business writing with clear and concise sentences targeted at executives</style>
         <constraints>
             - USE THE PROVIDED CONTEXT TO ANSWER THE QUESTION
             - IF YOU DON'T KNOW THE ANSWER, ADMIT IT HONESTLY
             - ANSWER IN KOREAN AND PROVIDE RICH SENTENCES TO ENHANCE THE QUALITY OF THE ANSWER
+            - INFORM THE USER WHEN ENTERING A NEW PHASE AND CONFIRM BEFORE PROCEEDING
+            - ALLOW THE USER TO RETURN TO PREVIOUS PHASES IF DESIRED
+            - ADHERE TO THE LENGTH CONSTRAINTS: PHASE 1 ABOUT 7000 WORDS / PHASE 2 ABOUT 8000 WORDS
         </constraints>
     </task>
     <phases>
@@ -200,7 +198,7 @@ def main():
             - Address all phases.
             - Each phase has specific goals to achieve.
             - Inform the user when they have reached the goal state and confirm if they want to proceed to the next phase.
-            - Notify the user when entering a new phase (e.g., ## Phase 1. Conference Overview).
+            - Notify the user when entering a new phase (e.g., ## Phase 1. Conference Overview and Key Points).
             - Allow the user to return to previous phases if desired.
         </general_instructions>
         <preparation_phase>
@@ -210,47 +208,31 @@ def main():
             </evaluation_criteria>
         </preparation_phase>
         <phase1>
-            <name>Providing Conference Overview Information</name>
-            <goal>Summarize conference information limited to the data in the vector DB.</goal>
+            <name>Conference Overview and Key Points</name>
+            <goal>Summarize conference information and analyze key points based on the user's questions.</goal>
             <additional_instructions>
-                - **Organize conference name and [summary] content in a table**
+                - Organize conference name and [summary] content in a table
+                - Analyze and synthesize key points, business cases, and promising application areas/methods
+                - Always provide sources at the end of each key topic
             </additional_instructions>
             <evaluation_criteria>
-                Confirm if the user has successfully provided a "detailed conference-related question". If not provided properly, repeatedly request with the message "Which specific details are you interested in?"
+                Confirm if the user has additional questions or is ready to proceed to the implications phase.
             </evaluation_criteria>
         </phase1>
         <phase2>
-            <name>Providing Conference Key Points Information</name>
-            <goal>Analyze and synthesize key points, business cases, and promising application areas/methods based on the specific conference content related to the detailed question.</goal>
+            <name>Implications and Analysis</name>
+            <goal>Provide implications and in-depth analysis based on the conference content and user's questions.</goal>
             <additional_instructions>
-                - **Organize conference [key points], [business cases], [promising application areas/methods] content, and always provide sources at the very end**
+                - Prioritize writing implications based on user questions
+                - Separate (Fact) and (Opinion) in the writing
+                - Include relevant conference content and sources
+                - Summarize new trends and present derived insights
+                - Suggest follow-up questions with brief answers
             </additional_instructions>
-            <evaluation_criteria>
-                Confirm if the user has successfully provided an "additional detailed conference-related question". If not provided properly, repeatedly request with the message "Is there anything else you'd like to know more about?"
-            </evaluation_criteria>
         </phase2>
-        <phase3>
-            <name>Providing Implications</name>
-            <goal>Provide implications based on the user's questions and conference content.</goal>
-            <additional_instructions>
-                - Prioritize writing implications based on user questions.
-                - Separate (Fact) and (Opinion) in the writing.
-                - Always include relevant conference content and sources.
-            </additional_instructions>
-        </phase3>
-        <phase4>
-            <name>Comprehensive Report Writing</name>
-            <goal>Write conference overview information, key points, and implications **in Korean**.</goal>
-            <additional_instructions>
-                - Start with 3 key takeaways as bullet points.
-                - In the main body, always cite and incorporate the table created in Phase 1.
-                - Mention specific conference content accurately and include its implications.
-                - Analyze in detail by structuring main points as bullet points.
-            </additional_instructions>
-        </phase4>
     </phases>
     </prompt>
-    """
+     """
     prompt = ChatPromptTemplate.from_template(template)
 
     def format_docs(docs: List[Document]) -> str:
