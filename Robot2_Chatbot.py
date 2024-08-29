@@ -238,7 +238,7 @@ def main():
     if new_mode != st.session_state.mode:
         st.session_state.mode = new_mode
         st.session_state.messages = []  # Clear chat history when mode changes
-        st.experimental_rerun()
+        st.rerun()  # Changed from st.experimental_rerun()
 
     # Display current mode (for debugging)
     st.write(f"Current mode: {st.session_state.mode}")
@@ -246,7 +246,7 @@ def main():
     # Reset function
     def reset_conversation():
         st.session_state.messages = []
-        st.experimental_rerun()
+        st.rerun()  # Changed from st.experimental_rerun()
 
     # Check for reset keywords
     reset_keywords = ["처음으로", "초기화", "다시", "안녕"]
