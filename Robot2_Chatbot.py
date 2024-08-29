@@ -109,11 +109,11 @@ def maximal_marginal_relevance(
 def main():
     st.title("Robot Conference Q&A System")
     
-    # Initialize session state for chat history and mode
+    # Initialize session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
     if "mode" not in st.session_state:
-        st.session_state.mode = None
+        st.session_state.mode = "Report Mode"
     
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
@@ -199,7 +199,7 @@ def main():
     chatbot_template = """
     Question: {question}
     Context: {context}
-    Answer the question based on the given context. If the answer is not in the context, say you don't know.
+    Answer the question based on the given context. Provide a concise response in 2-3 sentences. If the answer is not in the context, say you don't know. Use a conversational tone and answer in Korean.
     """
     chatbot_prompt = ChatPromptTemplate.from_template(chatbot_template)
 
@@ -212,7 +212,7 @@ def main():
 
     format = itemgetter("docs") | RunnableLambda(format_docs)
 
-    def get_chain(prompt):
+    def get_report_chain(prompt):
         answer = prompt | llm | StrOutputParser()
         return (
             RunnableParallel(question=RunnablePassthrough(), docs=retriever)
@@ -221,17 +221,32 @@ def main():
             .pick(["answer", "docs"])
         )
 
-    report_chain = get_chain(report_prompt)
-    chatbot_chain = get_chain(chatbot_prompt)
+    def get_chatbot_chain(prompt):
+        answer = prompt | llm | StrOutputParser()
+        return (
+            RunnableParallel(question=RunnablePassthrough(), docs=retriever)
+            .assign(context=format)
+            .assign(answer=answer)
+            .pick("answer")
+        )
+
+    report_chain = get_report_chain(report_prompt)
+    chatbot_chain = get_chatbot_chain(chatbot_prompt)
 
     # Mode selection
-    if st.session_state.mode is None:
-        st.session_state.mode = st.radio("Select mode:", ("Report Mode", "Chatbot Mode"))
+    new_mode = st.radio("Select mode:", ("Report Mode", "Chatbot Mode"), key="mode_selection")
+    if new_mode != st.session_state.mode:
+        st.session_state.mode = new_mode
+        st.session_state.messages = []  # Clear chat history when mode changes
+        st.experimental_rerun()
+
+    # Display current mode (for debugging)
+    st.write(f"Current mode: {st.session_state.mode}")
 
     # Reset function
     def reset_conversation():
         st.session_state.messages = []
-        st.session_state.mode = None
+        st.experimental_rerun()
 
     # Check for reset keywords
     reset_keywords = ["처음으로", "초기화", "다시", "안녕"]
@@ -246,7 +261,6 @@ def main():
         # Check for reset keywords
         if any(keyword in question for keyword in reset_keywords):
             reset_conversation()
-            st.experimental_rerun()
         else:
             st.session_state.messages.append({"role": "user", "content": question})
             with st.chat_message("user"):
@@ -273,7 +287,7 @@ def main():
                     # Step 3: Generating Answer
                     status_placeholder.text("Generating answer...")
                     progress_bar.progress(75)
-                    answer = response['answer']
+                    answer = response['answer'] if st.session_state.mode == "Report Mode" else response
                     time.sleep(1)  # Simulate generation time
                     
                     # Step 4: Finalizing Response
@@ -289,10 +303,11 @@ def main():
                 # Display the answer
                 st.markdown(answer)
                 
-                # Display sources
-                with st.expander("Sources"):
-                    for doc in response['docs']:
-                        st.write(f"- {doc.metadata['source']}")
+                # Display sources (only for Report Mode)
+                if st.session_state.mode == "Report Mode":
+                    with st.expander("Sources"):
+                        for doc in response['docs']:
+                            st.write(f"- {doc.metadata['source']}")
                 
                 # Add assistant's response to chat history
                 st.session_state.messages.append({"role": "assistant", "content": answer})
@@ -300,7 +315,6 @@ def main():
     # Add a button to reset the conversation
     if st.button("Reset Conversation"):
         reset_conversation()
-        st.experimental_rerun()
 
 if __name__ == "__main__":
     main()
