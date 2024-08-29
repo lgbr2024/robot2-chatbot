@@ -164,8 +164,12 @@ def main():
 
     <format>
      [Conference Overview]
-        - Explain the overall context of the conference related to the question
-        - Introduce the main points or topics
+        - Explain the overall context of the conference related to the question.
+        - Begin with: "In relation to this topic, the following key themes were addressed at [specific conference name]:"
+        - List the main topics, providing a brief 1-2 sentence explanation for each, mentioning speakers or company names where possible.
+        - Mention the scale of the conference (number of attendees, number of presentation sessions, etc.) and its importance to enhance credibility.
+        - Summarize in 1-2 sentences the impact or significance of this conference on the industry.
+
                    
      [Contents]
         - Analyze the key content discussed at the conference and reference.
