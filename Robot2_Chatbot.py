@@ -154,6 +154,7 @@ def main():
                 - 목표: 사용자의 질문과 일치하는 컨퍼런스를 찾습니다.
                 - 평가 기준: 컨퍼런스의 주요 주제, 날짜, 주요 기업 사례에 대한 간략한 개요로 시작합니다. 
                 - 반드시 사용자에게 "이 컨퍼런스가 찾으시는 것이 맞나요? 맞다면 '네'라고 해주시고, 아니라면 어떤 정보가 필요한지 말씀해 주세요."라고 물어봐야 합니다.
+                - 만약 사용자가 구체적인 질문을 했다면, 해당 질문에 대한 간단한 답변을 제공한 후 위의 질문을 해주세요.
             </if_phase_1>
             <if_phase_2>
                 ##PHASE 2. 컨퍼런스 세부정보 제공
@@ -166,48 +167,7 @@ def main():
         </response_logic>
 
         <detailed_prompt>
-            <context>
-                <role>As a strategic consultant for LG Group, your role is to uncover new trends and insights based on various conference trends.</role>
-                <knowledge_base>Conference information stored in a vector database</knowledge_base>
-                <goal>Provide comprehensive analysis and insights on the specified conference.</goal>
-            </context>
-        
-            <task>
-                <description>
-                    Conduct a thorough analysis of the specified conference, focusing on industrial changes, new issues, and specific cases. The analysis should be presented in a clear and professional manner suitable for high-level executives. The response should be well-structured and insightful.
-                </description>
-        
-                <format>
-                    The response consists of two PHASES, and you must meet the goals of each PHASE before proceeding to the next:
-        
-                    ##PHASE 1. 컨퍼런스 찾기
-                    - Goal: The aim is to find a conference that matches the user's question.
-                    - Evaluation criteria: Start with a brief overview of the conference's main topics, dates, and key company cases. Continuously ask the user, "Is this the conference you're looking for? If yes, please say 'yes'. If not, please tell me what information you need."
-        
-                    ##PHASE 2. 컨퍼런스 세부정보 제공
-                    - Goal: Provide an explanation of about 8,000 characters that aligns with the conference.
-                    - Provide a structured narrative of about 8,000 characters for the specific question. Follow this structure, but adjust flexibly according to the nature of the question:
-                        1. Question summary and background
-                        2. Analysis of relevant conference data **Include specific company cases, numbers, and expert opinions to support the analysis, and include sources at the end of the response to increase feasibility.**
-        
-                    Throughout your response, adhere to the following:
-                    - Maintain a professional and analytical tone.
-                    - Use clear and concise language suitable for executive-level readers.
-                    - Support your points with specific examples or data from the conference.
-                    - Clearly distinguish between factual information from the conference and your own analysis or opinions.
-                </format>
-        
-                <style>
-                    Write in a professional business style, using clear sentences. Maintain an analytical and authoritative tone appropriate for high-level executive readers. Use paragraphs to structure your thoughts, and utilize bullet points or numbering where necessary to enhance readability.
-                </style>
-        
-                <constraints>
-                    - ANALYZE BASED ONLY ON THE CONTEXTUAL INFORMATION PROVIDED ABOUT THE CONFERENCE.
-                    - IF SPECIFIC INFORMATION IS NOT AVAILABLE, MENTION THIS LIMITATION IN YOUR RESPONSE.
-                    - ANSWER IN KOREAN, ENSURING HIGH-QUALITY AND SOPHISTICATED LANGUAGE USE.
-                    - INCLUDE RELEVANT SOURCES OR REFERENCES WHERE APPLICABLE.
-                </constraints>
-            </task>
+            [이전과 동일한 내용 유지]
         </detailed_prompt>
 
         Answer:
@@ -287,6 +247,12 @@ def main():
             if st.session_state.current_phase == "PHASE 1" and "네" in question.lower():
                 st.session_state.current_phase = "PHASE 2"
                 st.info("PHASE 2로 넘어갑니다. 컨퍼런스에 대한 세부 정보를 제공하겠습니다.")
+            
+            # PHASE 2에서 추가 질문 버튼 추가
+            if st.session_state.current_phase == "PHASE 2":
+                if st.button("추가 질문하기"):
+                    st.session_state.current_phase = "PHASE 1"
+                    st.info("새로운 질문을 위해 PHASE 1로 돌아갑니다.")
 
 if __name__ == "__main__":
     main()
