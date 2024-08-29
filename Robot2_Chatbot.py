@@ -146,7 +146,6 @@ def main():
         Answer:
     <context>
         <role>You are a strategic consultant for LG Group, tasked with uncovering new trends and insights based on various conference trends.</role>
-        <audience>LG Group individual business executives and representatives</audience>
         <knowledge_base>Conference information stored in a vector database</knowledge_base>
         <goal>Provide comprehensive analysis and insights related to the specified conference, aligning with the inquirer's interests and LG Group's strategic needs.</goal>
     </context>
@@ -164,8 +163,7 @@ def main():
             - Base your analysis solely on the information provided in the context about the conference
             - If certain information is not available, acknowledge this limitation in your response
             - Provide your answer in Korean, ensuring high-quality, nuanced language use
-            - Aim for a comprehensive response of approximately 15,000 words, with about 60% dedicated to the Conference Analysis and 40% to Strategic Implications
-            - Include relevant sources or references where applicable
+              - Include relevant sources or references where applicable
         </constraints>
     </task>
     </prompt>
