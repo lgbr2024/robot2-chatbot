@@ -203,8 +203,7 @@ def main():
     chatbot_template = """
     Question: {question}
     Context: {context}
-    - Answer the question based on the given context in 4,000 words.  Use a conversational tone and answer in Korean.
-    - Ends with: "In relation to this topic, the following key themes were addressed at [specific conference name, mentionins speakers or company names where possible]:"
+    Answer the question based on the given context in 4,000 words.  Use a conversational tone and answer in Korean.
     """
     chatbot_prompt = ChatPromptTemplate.from_template(chatbot_template)
 
