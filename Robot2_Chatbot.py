@@ -76,7 +76,7 @@ class ModifiedPineconeVectorStore(PineconeVectorStore):
             Document(
                 page_content=results['matches'][i]['metadata'].get(self._text_key, ""),
                 metadata={
-                    'source': results['matches'][i]['metadata'].get('source', '').replace('C:\\Users\\minje\\data2\\', '') if 'source' in results['matches'][i]['metadata'] else 'Unknown'
+                    'source': results['matches'][i]['metadata'].get('source', '').replace('C:\\Users\\minje\\data3\\', '') if 'source' in results['matches'][i]['metadata'] else 'Unknown'
                 }
             )
             for i in mmr_selected
@@ -107,7 +107,7 @@ def maximal_marginal_relevance(
     return selected_indices
 
 def main():
-    st.title("Robot Conference Q&A System")
+    st.title("Robot2 Conference Q&A System")
     
     # Initialize session state for chat history
     if "messages" not in st.session_state:
@@ -115,7 +115,7 @@ def main():
     
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    index_name = "conference"
+    index_name = "robot"
     index = pc.Index(index_name)
     
     # Select GPT model
