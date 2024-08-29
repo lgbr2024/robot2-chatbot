@@ -114,6 +114,8 @@ def main():
         st.session_state.messages = []
     if "mode" not in st.session_state:
         st.session_state.mode = "Report Mode"
+    if "chat_history" not in st.session_state:
+        st.session_state.chat_history = []
     
     # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
@@ -201,9 +203,13 @@ def main():
 
     # Set up prompt template for chatbot mode
     chatbot_template = """
-    Question: {question}
+    Chat History:
+    {chat_history}
+    
+    Human: {question}
     Context: {context}
-    Answer the question based on the given context in 4,000 words.  Use a conversational tone and answer in Korean.
+    
+    Assistant: Based on the chat history and the given context, please answer the question in Korean using a conversational tone. Limit your response to around 2,000 words.
     """
     chatbot_prompt = ChatPromptTemplate.from_template(chatbot_template)
 
@@ -228,7 +234,11 @@ def main():
     def get_chatbot_chain(prompt):
         answer = prompt | llm | StrOutputParser()
         return (
-            RunnableParallel(question=RunnablePassthrough(), docs=retriever)
+            RunnableParallel(
+                question=RunnablePassthrough(),
+                chat_history=RunnablePassthrough(),
+                docs=retriever
+            )
             .assign(context=format)
             .assign(answer=answer)
             .pick("answer")
@@ -242,7 +252,8 @@ def main():
     if new_mode != st.session_state.mode:
         st.session_state.mode = new_mode
         st.session_state.messages = []  # Clear chat history when mode changes
-        st.rerun()  # Changed from st.experimental_rerun()
+        st.session_state.chat_history = []  # Clear chat history when mode changes
+        st.rerun()
 
     # Display current mode (for debugging)
     st.write(f"Current mode: {st.session_state.mode}")
@@ -250,7 +261,8 @@ def main():
     # Reset function
     def reset_conversation():
         st.session_state.messages = []
-        st.rerun()  # Changed from st.experimental_rerun()
+        st.session_state.chat_history = []
+        st.rerun()
 
     # Check for reset keywords
     reset_keywords = ["처음으로", "초기화", "다시", "안녕"]
@@ -284,8 +296,14 @@ def main():
                     # Step 2: Searching Database
                     status_placeholder.text("Searching database...")
                     progress_bar.progress(50)
-                    chain = report_chain if st.session_state.mode == "Report Mode" else chatbot_chain
-                    response = chain.invoke(question)
+                    
+                    if st.session_state.mode == "Report Mode":
+                        response = report_chain.invoke(question)
+                    else:  # Chatbot Mode
+                        # Format chat history
+                        chat_history = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state.chat_history])
+                        response = chatbot_chain.invoke({"question": question, "chat_history": chat_history})
+                    
                     time.sleep(1)  # Simulate search time
                     
                     # Step 3: Generating Answer
@@ -315,6 +333,13 @@ def main():
                 
                 # Add assistant's response to chat history
                 st.session_state.messages.append({"role": "assistant", "content": answer})
+                
+                # Update chat history for Chatbot Mode
+                if st.session_state.mode == "Chatbot Mode":
+                    st.session_state.chat_history.append({"role": "human", "content": question})
+                    st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                    # Limit chat history to last 10 messages
+                    st.session_state.chat_history = st.session_state.chat_history[-10:]
 
     # Add a button to reset the conversation
     if st.button("Reset Conversation"):
