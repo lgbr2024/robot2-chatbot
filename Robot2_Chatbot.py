@@ -147,19 +147,20 @@ def main():
         
         Question: {question}
         Context: {context}
+        Current Phase: {phase}
         
-        Based on the question and context provided, please respond according to the following instructions:
+        Based on the question, context, and current phase provided, please respond according to the following instructions:
 
         <response_logic>
-            <if_greeting_or_general_inquiry>
-                Provide a friendly welcome message and ask the user for more specific information about their interests in conferences or topics.
-            </if_greeting_or_general_inquiry>
-            <if_specific_question>
-                Provide a structured narrative of about 8,000 characters for the specific question. Follow this structure, but adjust flexibly according to the nature of the question:
+            <if_phase_1>
+                Find a conference that matches the user's question. Provide a brief overview of the conference's main topics, dates, and key company cases. At the end, explicitly ask the user "이 컨퍼런스가 맞습니까? 맞다면 '네'라고 답해주세요. 아니라면 추가로 필요한 정보를 말씀해 주세요."
+            </if_phase_1>
+            <if_phase_2>
+                Provide a structured narrative of about 8,000 characters for the specific question about the conference. Follow this structure:
                 1. Question summary and background
                 2. Analysis of relevant conference data **INCLUDE SPECIFIC COMPANY CASES, NUMBERS, AND EXPERT OPINIONS TO SUPPORT YOUR ANALYSIS. INCLUDE SOURCES AT THE END OF YOUR RESPONSE TO INCREASE FEASIBILITY.**
                 3. Key insights and trends
-            </if_specific_question>
+            </if_phase_2>
         </response_logic>
 
         <detailed_prompt>
@@ -227,6 +228,10 @@ def main():
         .pick(["answer"])
     )
 
+    # 현재 단계를 추적하기 위한 상태 변수 추가
+    if "current_phase" not in st.session_state:
+        st.session_state.current_phase = "PHASE 1"
+
     # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -260,12 +265,19 @@ def main():
                 # Step 2: Searching Database
                 status_placeholder.text("Searching database...")
                 progress_bar.progress(50)
-                if question.lower() in ['hi', 'hello', 'hey', '안녕하세요', '안녕']:
-                    response = {
-                        'answer': "안녕하세요! 어떤 컨퍼런스나 주제에 대해 더 자세히 알고 싶으신가요?"
-                    }
-                else:
-                    response = chain.invoke(question)
+                
+                # Phase에 따른 처리
+                if st.session_state.current_phase == "PHASE 1":
+                    if question.lower() in ['네', 'yes', 'y']:
+                        st.session_state.current_phase = "PHASE 2"
+                        response = {
+                            'answer': "PHASE 2로 넘어갑니다. 컨퍼런스에 대한 세부 정보를 제공해 드리겠습니다. 어떤 구체적인 정보를 원하시나요?"
+                        }
+                    else:
+                        response = chain.invoke({"question": question, "phase": "PHASE 1"})
+                elif st.session_state.current_phase == "PHASE 2":
+                    response = chain.invoke({"question": question, "phase": "PHASE 2"})
+                
                 time.sleep(1)  # Simulate search time
                 
                 # Step 3: Generating Answer
@@ -290,8 +302,14 @@ def main():
             # Display the answer
             st.markdown(answer)
             
+            # Phase 1에서 사용자에게 확인 요청
+            if st.session_state.current_phase == "PHASE 1" and "이 컨퍼런스가 맞습니까?" in answer:
+                user_confirm = st.button("네, 이 컨퍼런스가 맞습니다.")
+                if user_confirm:
+                    st.session_state.current_phase = "PHASE 2"
+                    st.markdown("PHASE 2로 넘어갑니다. 컨퍼런스에 대한 세부 정보를 제공해 드리겠습니다. 어떤 구체적인 정보를 원하시나요?")
+            
             # Add assistant's response to chat history
             st.session_state.messages.append({"role": "assistant", "content": answer})
 
-if __name__ == "__main__":
-    main()
+if __name__
