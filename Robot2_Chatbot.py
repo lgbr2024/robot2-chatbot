@@ -109,57 +109,55 @@ def maximal_marginal_relevance(
 def main():
     st.title("Robot2 Conference Q&A System")
     
-    # Initialize session state for chat history
     if "messages" not in st.session_state:
         st.session_state.messages = []
+        st.session_state.current_phase = "PHASE 1"
     
-    # Initialize Pinecone
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index_name = "robot"
     index = pc.Index(index_name)
     
-    # Select GPT model
     if "gpt_model" not in st.session_state:
         st.session_state.gpt_model = "gpt-4o"
     
     st.session_state.gpt_model = st.selectbox("Select GPT model:", ("gpt-4o", "gpt-4o-mini"), index=("gpt-4o", "gpt-4o-mini").index(st.session_state.gpt_model))
     llm = ChatOpenAI(model=st.session_state.gpt_model)
     
-    # Set up Pinecone vector store
     vectorstore = ModifiedPineconeVectorStore(
         index=index,
         embedding=OpenAIEmbeddings(model="text-embedding-ada-002"),
         text_key="source"
     )
     
-    # Set up retriever
     retriever = vectorstore.as_retriever(
         search_type='mmr',
         search_kwargs={"k": 10, "fetch_k": 20, "lambda_mult": 0.7}
     )
     
-    # Set up prompt template and chain
     template = """
     <prompt>
         <initial_greeting>
-            HELLO. I'M THE CHATBOT OF LG BUSINESS RESEARCH INSTITUTE. WHAT CONFERENCE OR TOPIC WOULD YOU LIKE ME TO ANALYZE? IF YOU HAVE A SPECIFIC QUESTION ABOUT A PARTICULAR TOPIC, PLEASE LET ME KNOW. OTHERWISE, I'LL PROCEED WITH A GENERAL CONFERENCE ANALYSIS.
+            안녕하세요. LG경영연구원의 Chatbot입니다. 어떤 컨퍼런스나 주제에 대해 분석해 드릴까요? 특정 주제에 대한 구체적인 질문이 있으시다면 말씀해 주세요. 그렇지 않다면 전반적인 컨퍼런스 분석을 진행하겠습니다.
         </initial_greeting>
         
         Question: {question}
         Context: {context}
-        Current Phase: {phase}
+        Current Phase: {current_phase}
         
-        Based on the question, context, and current phase provided, please respond according to the following instructions:
-
         <response_logic>
             <if_phase_1>
-                Find a conference that matches the user's question. Provide a brief overview of the conference's main topics, dates, and key company cases. At the end, explicitly ask the user "이 컨퍼런스가 맞습니까? 맞다면 '네'라고 답해주세요. 아니라면 추가로 필요한 정보를 말씀해 주세요."
+                ##PHASE 1. 컨퍼런스 찾기
+                - 목표: 사용자의 질문과 일치하는 컨퍼런스를 찾습니다.
+                - 평가 기준: 컨퍼런스의 주요 주제, 날짜, 주요 기업 사례에 대한 간략한 개요로 시작합니다. 
+                - 반드시 사용자에게 "이 컨퍼런스가 찾으시는 것이 맞나요? 맞다면 '네'라고 해주시고, 아니라면 어떤 정보가 필요한지 말씀해 주세요."라고 물어봐야 합니다.
             </if_phase_1>
             <if_phase_2>
-                Provide a structured narrative of about 8,000 characters for the specific question about the conference. Follow this structure:
-                1. Question summary and background
-                2. Analysis of relevant conference data **INCLUDE SPECIFIC COMPANY CASES, NUMBERS, AND EXPERT OPINIONS TO SUPPORT YOUR ANALYSIS. INCLUDE SOURCES AT THE END OF YOUR RESPONSE TO INCREASE FEASIBILITY.**
-                3. Key insights and trends
+                ##PHASE 2. 컨퍼런스 세부정보 제공
+                - 목표: 컨퍼런스에 대한 약 8,000자의 설명을 제공합니다.
+                - 다음 구조를 따르되, 질문의 성격에 따라 유연하게 조정하세요:
+                    1. 질문 요약 및 배경
+                    2. 관련 컨퍼런스 데이터 분석 **분석을 뒷받침할 구체적인 기업 사례, 숫자, 전문가 의견을 포함하고 대답 마지막에 출처를 포함하여 신뢰성을 높이세요.**
+                    3. 주요 인사이트 및 트렌드
             </if_phase_2>
         </response_logic>
 
@@ -215,29 +213,23 @@ def main():
     def format_docs(docs: List[Document]) -> str:
         formatted = []
         for doc in docs:
-            source = doc.metadata.get('source', 'Unknown source')
-            formatted.append(f"Source: {source}")
+            source = doc.metadata.get('source', '알 수 없는 출처')
+            formatted.append(f"출처: {source}")
         return "\n\n" + "\n\n".join(formatted)
 
     format = itemgetter("docs") | RunnableLambda(format_docs)
     answer = prompt | llm | StrOutputParser()
     chain = (
-        RunnableParallel(question=RunnablePassthrough(), docs=retriever)
+        RunnableParallel(question=RunnablePassthrough(), docs=retriever, current_phase=lambda _: st.session_state.current_phase)
         .assign(context=format)
         .assign(answer=answer)
         .pick(["answer"])
     )
 
-    # 현재 단계를 추적하기 위한 상태 변수 추가
-    if "current_phase" not in st.session_state:
-        st.session_state.current_phase = "PHASE 1"
-
-    # Display chat history
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
-    # Initialize the chatbot with a greeting if not already done
     if "initialized" not in st.session_state:
         st.session_state.initialized = True
         initial_greeting = "안녕하세요. LG경영연구원의 Chatbot입니다. 어떤 컨퍼런스나 주제에 대해 분석해 드릴까요? 특정 주제에 대한 구체적인 질문이 있으시다면 말씀해 주세요. 그렇지 않다면 전반적인 컨퍼런스 분석을 진행하겠습니다."
@@ -245,71 +237,48 @@ def main():
             st.markdown(initial_greeting)
         st.session_state.messages.append({"role": "assistant", "content": initial_greeting})
     
-    # User input
-    if question := st.chat_input("Please ask a question about the conference:"):
+    if question := st.chat_input("컨퍼런스에 대해 질문해 주세요:"):
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
             st.markdown(question)
         
         with st.chat_message("assistant"):
-            # Create placeholders for status updates
             status_placeholder = st.empty()
             progress_bar = st.progress(0)
             
             try:
-                # Step 1: Query Processing
-                status_placeholder.text("Processing query...")
+                status_placeholder.text("쿼리 처리 중...")
                 progress_bar.progress(25)
-                time.sleep(1)  # Simulate processing time
+                time.sleep(1)
                 
-                # Step 2: Searching Database
-                status_placeholder.text("Searching database...")
+                status_placeholder.text("데이터베이스 검색 중...")
                 progress_bar.progress(50)
+                response = chain.invoke(question)
+                time.sleep(1)
                 
-                # Phase에 따른 처리
-                if st.session_state.current_phase == "PHASE 1":
-                    if question.lower() in ['네', 'yes', 'y']:
-                        st.session_state.current_phase = "PHASE 2"
-                        response = {
-                            'answer': "PHASE 2로 넘어갑니다. 컨퍼런스에 대한 세부 정보를 제공해 드리겠습니다. 어떤 구체적인 정보를 원하시나요?"
-                        }
-                    else:
-                        response = chain.invoke({"question": question, "phase": "PHASE 1"})
-                elif st.session_state.current_phase == "PHASE 2":
-                    response = chain.invoke({"question": question, "phase": "PHASE 2"})
-                
-                time.sleep(1)  # Simulate search time
-                
-                # Step 3: Generating Answer
-                status_placeholder.text("Generating answer...")
+                status_placeholder.text("답변 생성 중...")
                 progress_bar.progress(75)
                 answer = response['answer']
-                time.sleep(1)  # Simulate generation time
+                time.sleep(1)
                 
-                # Step 4: Finalizing Response
-                status_placeholder.text("Finalizing response...")
+                status_placeholder.text("응답 마무리 중...")
                 progress_bar.progress(100)
-                time.sleep(0.5)  # Short pause to show completion
+                time.sleep(0.5)
                 
             except Exception as e:
                 st.error(f"죄송합니다. 응답을 생성하는 도중 오류가 발생했습니다: {str(e)}")
                 return
             finally:
-                # Clear status displays
                 status_placeholder.empty()
                 progress_bar.empty()
             
-            # Display the answer
             st.markdown(answer)
             
-            # Phase 1에서 사용자에게 확인 요청
-            if st.session_state.current_phase == "PHASE 1" and "이 컨퍼런스가 맞습니까?" in answer:
-                user_confirm = st.button("네, 이 컨퍼런스가 맞습니다.")
-                if user_confirm:
-                    st.session_state.current_phase = "PHASE 2"
-                    st.markdown("PHASE 2로 넘어갑니다. 컨퍼런스에 대한 세부 정보를 제공해 드리겠습니다. 어떤 구체적인 정보를 원하시나요?")
-            
-            # Add assistant's response to chat history
             st.session_state.messages.append({"role": "assistant", "content": answer})
+            
+            if st.session_state.current_phase == "PHASE 1" and "네" in question.lower():
+                st.session_state.current_phase = "PHASE 2"
+                st.info("PHASE 2로 넘어갑니다. 컨퍼런스에 대한 세부 정보를 제공하겠습니다.")
 
-if __name__
+if __name__ == "__main__":
+    main()
