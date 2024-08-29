@@ -109,8 +109,10 @@ def maximal_marginal_relevance(
 def main():
     st.title("Robot2 Conference Q&A System")
     
+    # Initialize session state
     if "messages" not in st.session_state:
         st.session_state.messages = []
+    if "current_phase" not in st.session_state:
         st.session_state.current_phase = "PHASE 1"
     
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
